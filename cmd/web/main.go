@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/iyilmaz24/Golang-Notification-Server/internal/config"
 )
 
 type application struct {
@@ -24,7 +26,7 @@ func main() {
 	appConfig := config.LoadConfig();
 
 	srv := &http.Server {
-		Addr: appConfig.Addr,
+		Addr: appConfig.Port,
 		ErrorLog: errorLog,
 		Handler: app.routes(),
 	}
