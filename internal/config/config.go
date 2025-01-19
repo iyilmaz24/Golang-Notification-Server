@@ -15,6 +15,7 @@ var (
 type Config struct {
 	Port string
 	Cors map[string]bool
+	AccessSecret string
 }
 
 func LoadConfig() *Config {
@@ -34,9 +35,15 @@ func LoadConfig() *Config {
 			corsOrigin[url] = true
 		}
 
+		adminSecret := os.Getenv("ADMIN_PASSWORD")
+		if adminSecret == "" {
+			log.Fatal("ADMIN_PASSWORD env variable not set")
+		}
+
 		instance = &Config {
 			Port: port,
 			Cors: corsOrigin,
+			AccessSecret: adminSecret,
 		}
 
 	})

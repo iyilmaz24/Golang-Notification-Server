@@ -1,52 +1,42 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/iyilmaz24/Golang-Notification-Server/internal/models"
 )
-
-type notification struct {
-	NotificationMethod string `json:"method"`
-	NotificationUrgency string `json:"urgency"`
-	NotificationRecipient string `json:"recipient"`
-	NotificationStatus string `json:"status"`
-	NotificationID string `json:"id"`
-	NotificationType string `json:"type"`
-	NotificationSource string `json:"source"`
-	NotificationTime string `json:"time"`
-	NotificationDate string `json:"date"`
-	NotificationTimezone string `json:"timezone"`
-	NotificationSubject string `json:"subject"`
-	NotificationMessage string `json:"message"`
-	AccessSecret string `json:"password"`
-}
-
-type dailyAnalytics struct {
-	NotificationRecipient string `json:"recipient"`
-	NotificationTime string `json:"time"`
-	NotificationDate string `json:"date"`
-	NotificationTimezone string `json:"timezone"`
-	NotificationSubject string `json:"subject"`
-	NotificationMessage string `json:"message"`
-}
 
 func (app *application) verifyPostRequest (w http.ResponseWriter, r *http.Request) (error) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		app.clientError(w, http.StatusMethodNotAllowed)
-		return fmt.Errorf("invalid request method: %s", r.Method)
+		return fmt.Errorf("invalid request method: %s", r.Method);
 	}
-	return nil
+	return nil;
 }
 
-func (app *application) getDailyAnalyticsObject(w http.ResponseWriter, r *http.Request) (dailyAnalytics, error) {
+func (app *application) getDailyAnalyticsObject(w http.ResponseWriter, r *http.Request) (models.DailyAnalytics, error) { // marshalls and returns the dailyAnalytics object from the POST request body
+	var analyticsObj models.DailyAnalytics;
+	err := json.NewDecoder(r.Body).Decode(&analyticsObj);
 
-	// marshall and return the dailyAnalytics object from the POST request body
+	if err != nil || analyticsObj.NotificationSubject == "" || analyticsObj.NotificationMessage == "" {
+		app.clientError(w, http.StatusBadRequest);
+		return models.DailyAnalytics{}, fmt.Errorf("error decoding JSON: %v", err);
+	}
 	
+	return analyticsObj, nil;
 }
 
-func (app *application) getNotificationObject(w http.ResponseWriter, r *http.Request) (notification, error) {
+func (app *application) getNotificationObject(w http.ResponseWriter, r *http.Request) (models.Notification, error) { // marshalls and returns the notification object from the POST request body
+	var notificationObj models.Notification;
+	err := json.NewDecoder(r.Body).Decode(&notificationObj);
 
-	// marshall and return the notification object from the POST request body
+	if err != nil || notificationObj.NotificationSubject == "" || notificationObj.NotificationMessage == "" {
+		app.clientError(w, http.StatusBadRequest);
+		return models.Notification{}, fmt.Errorf("error decoding JSON: %v", err);
+	}
 	
+	return notificationObj, nil;
 }
