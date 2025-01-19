@@ -29,6 +29,12 @@ func (app *application) dailyAnalyticsReport(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// send daily analytics report by email notification
+	// handle error if email service is not working
+	
+	// log the event to DB
+	// return success message & status code
+
 }
 
 func (app *application) urgentNotification(w http.ResponseWriter, r *http.Request) { // Used for critical alerts, log to DB + send SMS & email
@@ -44,20 +50,20 @@ func (app *application) urgentNotification(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-}
+	var notiService services.NotificationService;
+	
+	sendEmail := notiObj.NotificationEmail == true
+	sendSMS := notiObj.NotificationSMS == true
+	emailError, smsError := app.handleNotification(w, sendEmail, sendSMS, notiObj, notiService)
 
-func (app *application) routineNotification(w http.ResponseWriter, r *http.Request) { // Used by Lambda when everything healthy, log to DB
-	err := app.verifyPostRequest(w, r)
-	if err != nil {
-		app.errorLog.Println(err)
-		return 
-	}
-
-	notiObj, err := app.getNotificationObject(w, r)
-	if err != nil {
-		app.errorLog.Println(err)
+	if emailError != nil || smsError != nil {
+		app.handleNotificationError(w, err, emailError, smsError, notiObj, notiService) // checks if email or sms service is not working, alerts using the other method, logs the event to DB
 		return
 	}
+
+	// completed notification:
+		// log the event to DB
+		// return success message & status code
 
 }
 
@@ -74,24 +80,45 @@ func (app *application) onDemandNotification(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if (notiObj.AccessSecret == "" || notiObj.AccessSecret != config.LoadConfig().AccessSecret) { // protection against unauthorized access
+	if (notiObj.AccessSecret != config.LoadConfig().AccessSecret) { // protection against unauthorized access
 		app.clientError(w, http.StatusUnauthorized)
 		return
 	}
 	var notiService services.NotificationService;
 
-	err = notiService.SendEmailNotification(notiObj);
-	if err != nil {
-		app.errorLog.Println(err)
-		app.emailNotificationError(w, err)
+	sendEmail := notiObj.NotificationEmail == true
+	sendSMS := notiObj.NotificationSMS == true
+	emailError, smsError := app.handleNotification(w, sendEmail, sendSMS, notiObj, notiService) // checks if email or sms service is not working, alerts using the other method, logs the event to DB
+
+	if emailError != nil || smsError != nil {
+		app.handleNotificationError(w, err, emailError, smsError, notiObj, notiService)
 		return
 	}
 
-	err = notiService.SendTextNotification(notiObj);
+	// completed notification:
+		// log the event to DB
+		// return success message & status code
+
+}
+
+
+func (app *application) routineNotification(w http.ResponseWriter, r *http.Request) { // Used by Lambda when everything healthy, log to DB - dont send SMS or email
+	err := app.verifyPostRequest(w, r)
 	if err != nil {
 		app.errorLog.Println(err)
-		app.smsNotificationError(w, err)
+		return 
+	}
+
+	notiObj, err := app.getNotificationObject(w, r)
+	if err != nil {
+		app.errorLog.Println(err)
 		return
 	}
+	var notiService services.NotificationService;
+	
+	// healthy routine notification:
+		// no need to send email or SMS
+		// only log the notification event to DB
+		// return success message & status code
 
 }

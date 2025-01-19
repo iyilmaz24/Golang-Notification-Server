@@ -14,7 +14,8 @@ package models
 // notification message: string explanation
 
 type Notification struct {
-	NotificationMethod string `json:"method"`
+	NotificationEmail bool `json:"sendEmail"`
+	NotificationSMS bool `json:"sendSms"`
 	NotificationUrgency string `json:"urgency"`
 	NotificationRecipient string `json:"recipient"`
 	NotificationStatus string `json:"status"`

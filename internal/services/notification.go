@@ -28,3 +28,28 @@ func (notiService *NotificationService) SendTextNotification(notificationObj mod
 
 	return nil;
 }
+
+func (notiService *NotificationService) LogNotificationEvent(notificationObj models.Notification, errorString string) error {
+	if errorString != "" {
+		// log notification event to database
+	} else {
+		// log notification error string to database
+	}
+
+	return nil;
+}
+
+func (notiService *NotificationService) AlertSmsNotWorking() error {
+
+	// alert when sms service is not working with email
+
+	return nil;
+}
+
+func (notiService *NotificationService) AlertEmailNotWorking() error {
+	
+	// alert when email service is not working with sms
+
+	return nil;
+}
+

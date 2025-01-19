@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/models"
+	"github.com/iyilmaz24/Golang-Notification-Server/internal/services"
 )
 
 func (app *application) verifyPostRequest (w http.ResponseWriter, r *http.Request) (error) {
@@ -39,4 +40,20 @@ func (app *application) getNotificationObject(w http.ResponseWriter, r *http.Req
 	}
 	
 	return notificationObj, nil;
+}
+
+func (app *application) handleNotificationError(w http.ResponseWriter, err error, emailError error, smsError error, notiObj models.Notification, notiService services.NotificationService) {
+
+	switch { // check if email or sms service is not working, alert using the other method, log the event to DB
+		case emailError != nil && smsError == nil:
+			notiService.AlertEmailNotWorking()
+			notiService.LogNotificationEvent(notiObj, "Email service is not working")
+		case smsError != nil && emailError == nil:
+			notiService.AlertSmsNotWorking()
+			notiService.LogNotificationEvent(notiObj, "SMS service is not working")
+		case emailError != nil && smsError != nil:
+			notiService.LogNotificationEvent(notiObj, "Both Email and SMS services are not working")
+	}
+	app.notificationSendError(w, err, emailError != nil, smsError != nil) // last 2 arguments convert to boolean
+	return
 }
