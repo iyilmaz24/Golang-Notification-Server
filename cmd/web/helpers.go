@@ -42,18 +42,68 @@ func (app *application) getNotificationObject(w http.ResponseWriter, r *http.Req
 	return notificationObj, nil;
 }
 
-func (app *application) handleNotificationError(w http.ResponseWriter, err error, emailError error, smsError error, notiObj models.Notification, notiService services.NotificationService) {
+func (app *application) handleNotification(w http.ResponseWriter, sendEmail bool, sendSMS bool, notiObj models.Notification, notiService services.NotificationService) (error, error) {
+	var emailError error = nil;
+	var smsError error = nil;
+
+	if sendEmail {
+		emailError = notiService.SendEmailNotification(notiObj)
+	}
+	if sendSMS {
+		smsError = notiService.SendSmsNotification(notiObj)
+	}
+	return emailError, smsError
+}
+
+func (app *application) handleAnalyticsReport(w http.ResponseWriter, sendEmail bool, sendSMS bool, analyticsObj models.DailyAnalytics, notiService services.NotificationService) (error, error) {
+	var emailError error = nil;
+	var smsError error = nil;
+
+	if sendEmail {
+		emailError = notiService.SendEmailReport(analyticsObj)
+	}
+	if sendSMS {
+		smsError = notiService.SendSmsReport(analyticsObj)
+	}
+	return emailError, smsError
+}
+
+func (app *application) handleEmailSmsError(w http.ResponseWriter, err error, emailError error, smsError error, loggingInfo *models.LoggingInfo, notiService services.NotificationService) {
 
 	switch { // check if email or sms service is not working, alert using the other method, log the event to DB
 		case emailError != nil && smsError == nil:
 			notiService.AlertEmailNotWorking()
-			notiService.LogNotificationEvent(notiObj, "Email service is not working")
+			notiService.LogEventToDb(loggingInfo, "Email service is not working")
 		case smsError != nil && emailError == nil:
 			notiService.AlertSmsNotWorking()
-			notiService.LogNotificationEvent(notiObj, "SMS service is not working")
+			notiService.LogEventToDb(loggingInfo, "SMS service is not working")
 		case emailError != nil && smsError != nil:
-			notiService.LogNotificationEvent(notiObj, "Both Email and SMS services are not working")
+			notiService.LogEventToDb(loggingInfo, "Both Email and SMS services are not working")
 	}
-	app.notificationSendError(w, err, emailError != nil, smsError != nil) // last 2 arguments convert to boolean
+	app.emailSmsSendError(w, err, emailError != nil, smsError != nil) // last 2 arguments convert to boolean
 	return
+}
+
+func (app *application) getAnalyticsReportLoggingInfo (analyticsObj models.DailyAnalytics) *models.LoggingInfo {
+	return &models.LoggingInfo{
+		NotificationType: analyticsObj.NotificationType,
+		NotificationSource: analyticsObj.NotificationSource,
+		NotificationRecipient: analyticsObj.NotificationRecipient,
+		NotificationTime: analyticsObj.NotificationTime,
+		NotificationDate: analyticsObj.NotificationDate,
+		NotificationTimezone: analyticsObj.NotificationTimezone,
+		NotificationSubject: analyticsObj.NotificationSubject,
+	}
+}
+
+func (app *application) getNotificationLoggingInfo (notificationObj models.Notification) *models.LoggingInfo {
+	return &models.LoggingInfo{
+		NotificationType: notificationObj.NotificationType,
+		NotificationSource: notificationObj.NotificationSource,
+		NotificationRecipient: notificationObj.NotificationRecipient,
+		NotificationTime: notificationObj.NotificationTime,
+		NotificationDate: notificationObj.NotificationDate,
+		NotificationTimezone: notificationObj.NotificationTimezone,
+		NotificationSubject: notificationObj.NotificationSubject,
+	}
 }

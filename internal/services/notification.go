@@ -8,7 +8,14 @@ type NotificationService struct {
 
 }
 
-func (notiService *NotificationService) SendAnalyticsReport(analyticsObj models.DailyAnalytics) error {
+func (notiService *NotificationService) SendEmailReport(analyticsObj models.DailyAnalytics) error {
+
+	// send daily analytics report by email notification
+
+	return nil;
+}
+
+func (notiService *NotificationService) SendSmsReport(analyticsObj models.DailyAnalytics) error {
 
 	// send daily analytics report by email notification
 
@@ -22,18 +29,18 @@ func (notiService *NotificationService) SendEmailNotification(notificationObj mo
 	return nil;
 }
 
-func (notiService *NotificationService) SendTextNotification(notificationObj models.Notification) error {
+func (notiService *NotificationService) SendSmsNotification(notificationObj models.Notification) error {
 
 	// send text notification
 
 	return nil;
 }
 
-func (notiService *NotificationService) LogNotificationEvent(notificationObj models.Notification, errorString string) error {
+func (notiService *NotificationService) LogEventToDb(loggingInfo *models.LoggingInfo, errorString string) error {
 	if errorString != "" {
-		// log notification event to database
+		// log event to database
 	} else {
-		// log notification error string to database
+		// log error string to database
 	}
 
 	return nil;
