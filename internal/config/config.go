@@ -58,7 +58,7 @@ func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string 
 
 	paramInfo, exists := configDefinitions[paramName]
 	if !exists {
-		log.Fatalf("***ERROR: Parameter '%s' not found in configDefinitions", paramName)
+		log.Fatalf("***ERROR (config): Parameter '%s' not found in configDefinitions", paramName)
 	}
 	isEncrypted := paramInfo.Type == "SecureString"
 
@@ -71,7 +71,7 @@ func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string 
 		if paramInfo.DefaultValue != "" { // if parameter not found, return default value from configDefinitions
 			return paramInfo.DefaultValue
 		}
-		log.Fatalf("***ERROR: Parameter '%s' not found in Systems Manager", paramName)
+		log.Fatalf("***ERROR (config): Parameter '%s' not found in Systems Manager", paramName)
 	}
 	return *param.Parameter.Value
 }
@@ -81,7 +81,7 @@ func LoadConfig() *Config {
 	once.Do(func() {
 		config, err := config.LoadDefaultConfig(context.TODO())
 		if err != nil {
-			log.Fatal("Unable to load AWS SDK config")
+			log.Fatal("***ERROR (config): Unable to load AWS SDK config")
 		}
 		ssmClient := ssm.NewFromConfig(config)
 
