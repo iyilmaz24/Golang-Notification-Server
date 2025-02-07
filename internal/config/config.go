@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	once 	  sync.Once
-	instance  *Config
+	once     sync.Once
+	instance *Config
 )
 
 type Config struct {
-	Port 			 string
-	Cors 			 map[string]bool
-	AdminPassword 	 string
-	DbDsn 			 string
+	Port             string
+	Cors             map[string]bool
+	AdminPassword    string
+	DbDsn            string
 	GmailAppPassword string
 }
 
@@ -31,27 +31,27 @@ type ConfigDefinition struct {
 }
 
 var configDefinitions = map[string]ConfigDefinition{
-    "CORS_ORIGIN": {
-        Path:        "/backend/internal/admin-cors-origin",
-        Type:    	 "StringList",
-    },
-    "DB_DSN": {
-        Path:        "/backend/internal/db_dsn",
-        Type:    	 "SecureString",
-    },
-    "PORT": {
-        Path:         "/backend/ports/admin",
-        Type:    	  "String",
-        DefaultValue: ":3100",
-    },
-    "ADMIN_PASSWORD": {
-        Path:         "/backend/internal/admin-password",
-        Type:    	  "SecureString",
-    },
-    "GMAIL_APP_PASSWORD": {
-        Path:         "/backend/internal/gmail-app-password",
-        Type:    	  "SecureString",
-    },
+	"CORS_ORIGIN": {
+		Path: "/backend/internal/admin-cors-origin",
+		Type: "StringList",
+	},
+	"DB_DSN": {
+		Path: "/backend/internal/db_dsn",
+		Type: "SecureString",
+	},
+	"PORT": {
+		Path:         "/backend/ports/admin",
+		Type:         "String",
+		DefaultValue: ":3100",
+	},
+	"ADMIN_PASSWORD": {
+		Path: "/backend/internal/admin-password",
+		Type: "SecureString",
+	},
+	"GMAIL_APP_PASSWORD": {
+		Path: "/backend/internal/gmail-app-password",
+		Type: "SecureString",
+	},
 }
 
 func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string {
@@ -62,17 +62,17 @@ func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string 
 	}
 	isEncrypted := paramInfo.Type == "SecureString"
 
-	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput {
-		Name: &paramInfo.Path,
+	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput{
+		Name:           &paramInfo.Path,
 		WithDecryption: &isEncrypted,
 	})
 
-    if err != nil {
-        if paramInfo.DefaultValue != "" { 		// if parameter not found, return default value from configDefinitions	
-            return paramInfo.DefaultValue
-        }
-        log.Fatalf("***ERROR: Parameter '%s' not found in Systems Manager", paramName)
-    }
+	if err != nil {
+		if paramInfo.DefaultValue != "" { // if parameter not found, return default value from configDefinitions
+			return paramInfo.DefaultValue
+		}
+		log.Fatalf("***ERROR: Parameter '%s' not found in Systems Manager", paramName)
+	}
 	return *param.Parameter.Value
 }
 
@@ -85,27 +85,27 @@ func LoadConfig() *Config {
 		}
 		ssmClient := ssm.NewFromConfig(config)
 
-		corsString := getSystemsManagerParameter("CORS_ORIGIN", ssmClient)		// comma separated list of URLs
-		corsUrls := strings.Split(corsString, ",")					// convert to list of URLs
+		corsString := getSystemsManagerParameter("CORS_ORIGIN", ssmClient) // comma separated list of URLs
+		corsUrls := strings.Split(corsString, ",")                         // convert to list of URLs
 
-		corsOrigin := make(map[string]bool, len(corsUrls))			// create map of URLs
-        for _, url := range corsUrls {
-            trimmedURL := strings.TrimSpace(url)
-            if trimmedURL != "" {
-                corsOrigin[trimmedURL] = true
-            }
-        }
-		
+		corsOrigin := make(map[string]bool, len(corsUrls)) // create map of URLs
+		for _, url := range corsUrls {
+			trimmedURL := strings.TrimSpace(url)
+			if trimmedURL != "" {
+				corsOrigin[trimmedURL] = true
+			}
+		}
+
 		port := getSystemsManagerParameter("PORT", ssmClient)
 		adminPassword := getSystemsManagerParameter("ADMIN_PASSWORD", ssmClient)
 		dbDsn := getSystemsManagerParameter("DB_DSN", ssmClient)
 		gmailAppPassword := getSystemsManagerParameter("GMAIL_APP_PASSWORD", ssmClient)
 
-		instance = &Config {
-			Port: 			  port,
-			Cors: 			  corsOrigin,
+		instance = &Config{
+			Port:             port,
+			Cors:             corsOrigin,
 			AdminPassword:    adminPassword,
-			DbDsn: 			  dbDsn,
+			DbDsn:            dbDsn,
 			GmailAppPassword: gmailAppPassword,
 		}
 
