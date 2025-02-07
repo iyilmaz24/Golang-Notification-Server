@@ -1,49 +1,112 @@
+// Package config provides configuration management using AWS Systems Manager Parameter Store
 package config
 
 import (
+	"context"
 	"log"
-	"os"
 	"strings"
 	"sync"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
 var (
-	once *sync.Once
-	instance *Config
+	once 	  sync.Once
+	instance  *Config
 )
 
 type Config struct {
-	Port string
-	Cors map[string]bool
-	AccessSecret string
+	Port 			 string
+	Cors 			 map[string]bool
+	AdminPassword 	 string
+	DbDsn 			 string
+	GmailAppPassword string
+}
+
+type ConfigDefinition struct {
+	Path         string
+	Type         string
+	DefaultValue string
+}
+
+var configDefinitions = map[string]ConfigDefinition{
+    "CORS_ORIGIN": {
+        Path:        "/backend/internal/admin-cors-origin",
+        Type:    	 "StringList",
+    },
+    "DB_DSN": {
+        Path:        "/backend/internal/db_dsn",
+        Type:    	 "SecureString",
+    },
+    "PORT": {
+        Path:         "/backend/ports/admin",
+        Type:    	  "String",
+        DefaultValue: ":3100",
+    },
+    "ADMIN_PASSWORD": {
+        Path:         "/backend/internal/admin-password",
+        Type:    	  "SecureString",
+    },
+    "GMAIL_APP_PASSWORD": {
+        Path:         "/backend/internal/gmail-app-password",
+        Type:    	  "SecureString",
+    },
+}
+
+func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string {
+
+	paramInfo, exists := configDefinitions[paramName]
+	if !exists {
+		log.Fatalf("***ERROR: Parameter '%s' not found in configDefinitions", paramName)
+	}
+	isEncrypted := paramInfo.Type == "SecureString"
+
+	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput {
+		Name: &paramInfo.Path,
+		WithDecryption: &isEncrypted,
+	})
+
+    if err != nil {
+        if paramInfo.DefaultValue != "" { 		// if parameter not found, return default value from configDefinitions	
+            return paramInfo.DefaultValue
+        }
+        log.Fatalf("***ERROR: Parameter '%s' not found in Systems Manager", paramName)
+    }
+	return *param.Parameter.Value
 }
 
 func LoadConfig() *Config {
 
 	once.Do(func() {
-
-		port := ":8400"
-
-		corsString := os.Getenv("CORS_ORIGIN_NOTIFICATION")
-		if corsString == "" {
-			log.Fatal("CORS_ORIGIN_NOTIFICATION env variable not set")
+		config, err := config.LoadDefaultConfig(context.TODO())
+		if err != nil {
+			log.Fatal("Unable to load AWS SDK config")
 		}
-		corsUrls := strings.Split(corsString, ",")
+		ssmClient := ssm.NewFromConfig(config)
 
-		corsOrigin := make(map[string]bool, len(corsUrls))
-		for _, url := range corsUrls {
-			corsOrigin[url] = true
-		}
+		corsString := getSystemsManagerParameter("CORS_ORIGIN", ssmClient)		// comma separated list of URLs
+		corsUrls := strings.Split(corsString, ",")					// convert to list of URLs
 
-		adminSecret := os.Getenv("ADMIN_PASSWORD")
-		if adminSecret == "" {
-			log.Fatal("ADMIN_PASSWORD env variable not set")
-		}
+		corsOrigin := make(map[string]bool, len(corsUrls))			// create map of URLs
+        for _, url := range corsUrls {
+            trimmedURL := strings.TrimSpace(url)
+            if trimmedURL != "" {
+                corsOrigin[trimmedURL] = true
+            }
+        }
+		
+		port := getSystemsManagerParameter("PORT", ssmClient)
+		adminPassword := getSystemsManagerParameter("ADMIN_PASSWORD", ssmClient)
+		dbDsn := getSystemsManagerParameter("DB_DSN", ssmClient)
+		gmailAppPassword := getSystemsManagerParameter("GMAIL_APP_PASSWORD", ssmClient)
 
 		instance = &Config {
-			Port: port,
-			Cors: corsOrigin,
-			AccessSecret: adminSecret,
+			Port: 			  port,
+			Cors: 			  corsOrigin,
+			AdminPassword:    adminPassword,
+			DbDsn: 			  dbDsn,
+			GmailAppPassword: gmailAppPassword,
 		}
 
 	})
