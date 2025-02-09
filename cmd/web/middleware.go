@@ -14,7 +14,7 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			app.clientError(w, http.StatusMethodNotAllowed)
-			app.errorLog.Printf("***ERROR (cors-middleware): Method not allowed: %s", r.Method)
+			app.errorLog.Printf("(cors-middleware) Method not allowed: %s, %s", r.Method, r.URL.Path)
 			return
 		}
 		corsOrigin := config.LoadConfig().Cors // loads a map[string]bool of allowed origins
@@ -26,7 +26,7 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 				if parsedURL, err := url.Parse(referer); err == nil {
 					origin = fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host) // remove path from referer, only keep scheme and host
 				} else if err != nil {
-					app.errorLog.Printf("***ERROR (cors-middleware): Error parsing referer: %s", err)
+					app.errorLog.Printf("(cors-middleware) Error parsing referer: %s", err)
 				}
 			}
 		}
@@ -34,7 +34,7 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 		_, ok := corsOrigin[origin]
 		if !ok {
 			app.clientError(w, http.StatusForbidden)                                          // respond with 403 Forbidden
-			app.errorLog.Printf("***ERROR (cors-middleware): Origin not allowed: %s", origin) // log the origin that was not allowed
+			app.errorLog.Printf("(cors-middleware) Origin not allowed: %s", origin) // log the origin that was not allowed
 			return
 		}
 
@@ -42,11 +42,6 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
 
 		next.ServeHTTP(w, r)
 	})

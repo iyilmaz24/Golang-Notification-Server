@@ -42,45 +42,17 @@ func (app *application) getNotificationObject(w http.ResponseWriter, r *http.Req
 	return notificationObj, nil
 }
 
-func (app *application) handleNotification(w http.ResponseWriter, sendEmail bool, sendSMS bool, notiObj models.Notification, notiService services.NotificationService) (error, error) {
-	var emailError error = nil
-	var smsError error = nil
+func (app *application) handleEmailSmsError(w http.ResponseWriter, emailError error, smsError error, emailService services.EmailService, smsService services.SmsService) {
 
-	if sendEmail {
-		emailError = notiService.SendEmailNotification(notiObj)
+	if emailError != nil && smsError == nil {
+		smsService.AlertEmailNotWorking() 
 	}
-	if sendSMS {
-		smsError = notiService.SendSmsNotification(notiObj)
-	}
-	return emailError, smsError
-}
 
-func (app *application) handleAnalyticsReport(w http.ResponseWriter, sendEmail bool, sendSMS bool, analyticsObj models.DailyAnalytics, notiService services.NotificationService) (error, error) {
-	var emailError error = nil
-	var smsError error = nil
-
-	if sendEmail {
-		emailError = notiService.SendEmailReport(analyticsObj)
+	if smsError != nil && emailError == nil {
+		emailService.AlertSmsNotWorking() 
 	}
-	if sendSMS {
-		smsError = notiService.SendSmsReport(analyticsObj)
-	}
-	return emailError, smsError
-}
 
-func (app *application) handleEmailSmsError(w http.ResponseWriter, err error, emailError error, smsError error, loggingInfo *models.LoggingInfo, notiService services.NotificationService) {
-
-	switch { // check if email or sms service is not working, alert using the other method, log the event to DB
-	case emailError != nil && smsError == nil:
-		notiService.AlertEmailNotWorking()
-		notiService.LogEventToDb(loggingInfo, "Email service is not working")
-	case smsError != nil && emailError == nil:
-		notiService.AlertSmsNotWorking()
-		notiService.LogEventToDb(loggingInfo, "SMS service is not working")
-	case emailError != nil && smsError != nil:
-		notiService.LogEventToDb(loggingInfo, "Both Email and SMS services are not working")
-	}
-	app.emailSmsSendError(w, err, emailError != nil, smsError != nil) // last 2 arguments convert to boolean
+	app.emailSmsSendError(w, emailError, smsError)
 	return
 }
 

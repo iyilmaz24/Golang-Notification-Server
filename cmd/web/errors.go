@@ -20,20 +20,18 @@ func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
 
-func (app *application) emailSmsSendError(w http.ResponseWriter, err error, email bool, sms bool) {
+func (app *application) emailSmsSendError(w http.ResponseWriter, email error, sms error) {
 	var errorMessage string
-	switch {
-	case email && sms:
-		errorMessage = "Email and SMS notification error"
-	case email:
-		errorMessage = "Email notification error"
-	case sms:
-		errorMessage = "SMS notification error"
-	default:
-		errorMessage = "Error sending notification"
-	}
-	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.errorLog.Printf("%s: %s\n%s", errorMessage, err.Error(), trace)
 
-	http.Error(w, errorMessage, http.StatusInternalServerError)
+	switch {
+	case email != nil && sms != nil:
+		errorMessage = "email and sms notification error"
+	case email != nil:
+		errorMessage = "email notification error"
+	case sms != nil:
+		errorMessage = "sms notification error"
+	}
+
+	app.errorLog.Print(errorMessage)
+	http.Error(w, errorMessage, http.StatusInternalServerError) // respond to client with error message
 }
