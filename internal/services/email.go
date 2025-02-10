@@ -8,7 +8,7 @@ import (
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/logger"
 )
 
-func sendEmail(emailSubject string, toEmails []string, emailContent []byte) error {
+func sendEmail(toEmails []string, emailSubject string, emailContent []byte) error {
 	password := config.LoadConfig().GmailAppPassword
 	from := config.LoadConfig().GmailAddress
 	smtpHost := config.LoadConfig().GmailSmtpHost
@@ -29,6 +29,6 @@ func sendEmail(emailSubject string, toEmails []string, emailContent []byte) erro
 	return nil
 }
 
-func sendEmailFallback(emailSubject string, toEmails []string, emailContent []byte) error {
+func sendEmailFallback(toEmails []string, emailSubject string, emailContent []byte) error {
 	return nil
 }
