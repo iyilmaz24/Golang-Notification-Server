@@ -15,20 +15,20 @@ package models
 // notification message: string explanation
 
 type Notification struct {
-	NotificationEmail     bool   `json:"sendEmail"`
-	NotificationSMS       bool   `json:"sendSms"`
-	NotificationUrgency   string `json:"urgency"`
-	NotificationRecipient string `json:"recipient"`
-	NotificationStatus    string `json:"status"`
-	NotificationID        string `json:"id"`
-	NotificationType      string `json:"type"`
-	NotificationSource    string `json:"source"`
-	NotificationTime      string `json:"time"`
-	NotificationDate      string `json:"date"`
-	NotificationTimezone  string `json:"timezone"`
-	NotificationSubject   string `json:"subject"`
-	NotificationMessage   string `json:"message"`
-	AccessSecret          string `json:"password"`
+	NotificationEmail      bool     `json:"sendEmail"`
+	NotificationSMS        bool     `json:"sendSms"`
+	NotificationUrgency    string   `json:"urgency"`
+	NotificationRecipients []string `json:"recipient"`
+	NotificationStatus     string   `json:"status"`
+	NotificationID         string   `json:"id"`
+	NotificationType       string   `json:"type"`
+	NotificationSource     string   `json:"source"`
+	NotificationTime       string   `json:"time"`
+	NotificationDate       string   `json:"date"`
+	NotificationTimezone   string   `json:"timezone"`
+	NotificationSubject    string   `json:"subject"`
+	NotificationMessage    string   `json:"message"`
+	AccessSecret           string   `json:"password"`
 }
 
 // notification email: boolean indicating whether to send an email (true, false)
@@ -42,16 +42,16 @@ type Notification struct {
 // notification message: string explanation
 
 type DailyAnalytics struct {
-	NotificationEmail     bool   `json:"sendEmail"`
-	NotificationSMS       bool   `json:"sendSms"`
-	NotificationSource    string `json:"source"`
-	NotificationRecipient string `json:"recipient"`
-	NotificationTime      string `json:"time"`
-	NotificationDate      string `json:"date"`
-	NotificationTimezone  string `json:"timezone"`
-	NotificationType      string `json:"type"`
-	NotificationSubject   string `json:"subject"`
-	NotificationMessage   string `json:"message"`
+	NotificationEmail      bool     `json:"sendEmail"`
+	NotificationSMS        bool     `json:"sendSms"`
+	NotificationSource     string   `json:"source"`
+	NotificationRecipients []string `json:"recipient"`
+	NotificationTime       string   `json:"time"`
+	NotificationDate       string   `json:"date"`
+	NotificationTimezone   string   `json:"timezone"`
+	NotificationType       string   `json:"type"`
+	NotificationSubject    string   `json:"subject"`
+	NotificationMessage    string   `json:"message"`
 }
 
 // notification recipient: string indicating who the notification is for
@@ -64,12 +64,12 @@ type DailyAnalytics struct {
 // notification subject: string 1 sentence summary
 
 type LoggingInfo struct {
-	NotificationType      string `json:"type"`
-	NotificationSource    string `json:"source"`
-	NotificationStatus    string `json:"status"`
-	NotificationRecipient string `json:"recipient"`
-	NotificationTime      string `json:"time"`
-	NotificationDate      string `json:"date"`
-	NotificationTimezone  string `json:"timezone"`
-	NotificationSubject   string `json:"subject"`
+	NotificationType       string   `json:"type"`
+	NotificationSource     string   `json:"source"`
+	NotificationStatus     string   `json:"status"`
+	NotificationRecipients []string `json:"recipient"`
+	NotificationTime       string   `json:"time"`
+	NotificationDate       string   `json:"date"`
+	NotificationTimezone   string   `json:"timezone"`
+	NotificationSubject    string   `json:"subject"`
 }

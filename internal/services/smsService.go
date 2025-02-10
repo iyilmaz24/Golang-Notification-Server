@@ -21,7 +21,7 @@ func (notiService *SmsService) SendSmsNotification(notificationObj models.Notifi
 	return nil
 }
 
-func (notiService *SmsService) AlertEmailNotWorking() error {
+func (notiService *SmsService) AlertEmailNotWorking(errorMessage string) error {
 
 	// alert when email service is not working with sms
 

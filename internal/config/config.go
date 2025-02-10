@@ -22,6 +22,8 @@ type Config struct {
 	AdminPassword    string
 	DbDsn            string
 	GmailAppPassword string
+	GmailAddress     string
+	GmailSmtpHost    string
 }
 
 type ConfigDefinition struct {
@@ -51,6 +53,14 @@ var configDefinitions = map[string]ConfigDefinition{
 	"GMAIL_APP_PASSWORD": {
 		Path: "/backend/internal/gmail-app-password",
 		Type: "SecureString",
+	},
+	"GMAIL_ADDRESS": {
+		Path: "/backend/internal/gmail-address",
+		Type: "String",
+	},
+	"GMAIL_SMTP_HOST": {
+		Path: "/backend/internal/smtp-host",
+		Type: "String",
 	},
 }
 
@@ -100,6 +110,8 @@ func LoadConfig() *Config {
 		adminPassword := getSystemsManagerParameter("ADMIN_PASSWORD", ssmClient)
 		dbDsn := getSystemsManagerParameter("DB_DSN", ssmClient)
 		gmailAppPassword := getSystemsManagerParameter("GMAIL_APP_PASSWORD", ssmClient)
+		gmailAddress := getSystemsManagerParameter("GMAIL_ADDRESS", ssmClient)
+		gmailSmtpHost := getSystemsManagerParameter("GMAIL_SMTP_HOST", ssmClient)
 
 		instance = &Config{
 			Port:             port,
@@ -107,6 +119,8 @@ func LoadConfig() *Config {
 			AdminPassword:    adminPassword,
 			DbDsn:            dbDsn,
 			GmailAppPassword: gmailAppPassword,
+			GmailAddress:     gmailAddress,
+			GmailSmtpHost:    gmailSmtpHost,
 		}
 
 	})
