@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/models"
@@ -18,22 +19,26 @@ func (notiService *EmailService) SendEmailReport(analyticsObj models.DailyAnalyt
 
 func (notiService *EmailService) SendEmailNotification(notificationObj models.Notification) error {
 
-	err := sendEmail(notificationObj)
+	emailContent := getEmailContent(notificationObj)
+	emailSubject := notificationObj.NotificationSubject
+	emailRecipients := notificationObj.NotificationRecipients
+
+	err := sendEmail(emailSubject, emailRecipients, emailContent)
 
 	if err != nil {
 		smsService := SmsService{}
-		err = sendEmailFallback(notificationObj)
+		err = sendEmailFallback(emailSubject, emailRecipients, emailContent)
 		var errorMessage string
 
 		if err != nil {
-			errorMessage = fmt.Sprintf("Error sending email with fallback & primary method for '%s'", notificationObj.NotificationSubject)
+			errorMessage = fmt.Sprintf("Error sending email with fallback & primary method for '%s'", emailSubject)
 			smsService.AlertEmailNotWorking(errorMessage)
 		} else {
-			errorMessage = fmt.Sprintf("Error sending email with primary method for '%s'", notificationObj.NotificationSubject)
+			errorMessage = fmt.Sprintf("Error sending email with primary method for '%s'", emailSubject)
 			smsService.AlertEmailNotWorking(errorMessage)
 		}
 
-		return fmt.Errorf(errorMessage)
+		return errors.New(errorMessage)
 	}
 
 	return nil
