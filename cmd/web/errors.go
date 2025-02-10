@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/iyilmaz24/Golang-Notification-Server/internal/logger"
 )
 
 func (app *application) serverError(w http.ResponseWriter, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.errorLog.Println(2, trace)
+	logger.GetLogger().ErrorLog.Println(2, trace)
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
@@ -32,6 +34,6 @@ func (app *application) emailSmsSendError(w http.ResponseWriter, email error, sm
 		errorMessage = "sms notification error"
 	}
 
-	app.errorLog.Print(errorMessage)
+	logger.GetLogger().ErrorLog.Print(errorMessage)
 	http.Error(w, errorMessage, http.StatusInternalServerError) // respond to client with error message
 }

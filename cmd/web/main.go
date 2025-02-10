@@ -10,8 +10,6 @@ import (
 )
 
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
 }
 
 func main() {
@@ -20,10 +18,7 @@ func main() {
 	errorLog := log.New(os.Stderr, "***ERROR LOG:\t", log.Ldate|log.Ltime|log.Lshortfile)
 	logger.InitLogger(infoLog, errorLog)
 
-	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-	}
+	app := &application{}
 
 	appConfig := config.LoadConfig()
 

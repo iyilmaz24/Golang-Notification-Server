@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/config"
+	"github.com/iyilmaz24/Golang-Notification-Server/internal/logger"
 )
 
 func (app *application) enableCors(next http.Handler) http.Handler {
@@ -14,7 +15,7 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			app.clientError(w, http.StatusMethodNotAllowed)
-			app.errorLog.Printf("(cors-middleware) Method not allowed: %s, %s", r.Method, r.URL.Path)
+			logger.GetLogger().ErrorLog.Printf("(cors-middleware) Method not allowed: %s, %s", r.Method, r.URL.Path)
 			return
 		}
 		corsOrigin := config.LoadConfig().Cors // loads a map[string]bool of allowed origins
@@ -26,15 +27,15 @@ func (app *application) enableCors(next http.Handler) http.Handler {
 				if parsedURL, err := url.Parse(referer); err == nil {
 					origin = fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host) // remove path from referer, only keep scheme and host
 				} else if err != nil {
-					app.errorLog.Printf("(cors-middleware) Error parsing referer: %s", err)
+					logger.GetLogger().ErrorLog.Printf("(cors-middleware) Error parsing referer: %s", err)
 				}
 			}
 		}
 
 		_, ok := corsOrigin[origin]
 		if !ok {
-			app.clientError(w, http.StatusForbidden)                                          // respond with 403 Forbidden
-			app.errorLog.Printf("(cors-middleware) Origin not allowed: %s", origin) // log the origin that was not allowed
+			app.clientError(w, http.StatusForbidden)                                               // respond with 403 Forbidden
+			logger.GetLogger().ErrorLog.Printf("(cors-middleware) Origin not allowed: %s", origin) // log the origin that was not allowed
 			return
 		}
 
