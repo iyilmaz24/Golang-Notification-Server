@@ -28,7 +28,7 @@ func main() {
 		Handler:  app.routes(),
 	}
 
-	infoLog.Println("Starting server on", srv.Addr)
+	logger.GetLogger().InfoLog.Println("(cmd/web/main.go) starting server on", srv.Addr)
 
 	err := srv.ListenAndServe()
 	if err != nil {

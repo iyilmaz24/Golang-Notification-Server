@@ -17,13 +17,13 @@ var (
 )
 
 type Config struct {
-	Port             string
-	Cors             map[string]bool
-	AdminPassword    string
-	DbDsn            string
-	GmailAppPassword string
-	GmailAddress     string
-	GmailSmtpHost    string
+	Port              string
+	Cors              map[string]bool
+	AdminPassword     string
+	DbDsn             string
+	GmailAppPassword  string
+	GmailAddress      string
+	AlertPhoneNumbers []string
 }
 
 type ConfigDefinition struct {
@@ -58,9 +58,9 @@ var configDefinitions = map[string]ConfigDefinition{
 		Path: "/backend/internal/gmail-address",
 		Type: "String",
 	},
-	"GMAIL_SMTP_HOST": {
-		Path: "/backend/internal/smtp-host",
-		Type: "String",
+	"ALERT_PHONE_NUMBERS": {
+		Path: "/backend/internal/alert-phone-numbers",
+		Type: "StringList",
 	},
 }
 
@@ -111,16 +111,16 @@ func LoadConfig() *Config {
 		dbDsn := getSystemsManagerParameter("DB_DSN", ssmClient)
 		gmailAppPassword := getSystemsManagerParameter("GMAIL_APP_PASSWORD", ssmClient)
 		gmailAddress := getSystemsManagerParameter("GMAIL_ADDRESS", ssmClient)
-		gmailSmtpHost := getSystemsManagerParameter("GMAIL_SMTP_HOST", ssmClient)
+		alertPhoneNumbersString := getSystemsManagerParameter("ALERT_PHONE_NUMBERS", ssmClient)
 
 		instance = &Config{
-			Port:             port,
-			Cors:             corsOrigin,
-			AdminPassword:    adminPassword,
-			DbDsn:            dbDsn,
-			GmailAppPassword: gmailAppPassword,
-			GmailAddress:     gmailAddress,
-			GmailSmtpHost:    gmailSmtpHost,
+			Port:              port,
+			Cors:              corsOrigin,
+			AdminPassword:     adminPassword,
+			DbDsn:             dbDsn,
+			GmailAppPassword:  gmailAppPassword,
+			GmailAddress:      gmailAddress,
+			AlertPhoneNumbers: strings.Split(alertPhoneNumbersString, ","),
 		}
 
 	})

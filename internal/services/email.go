@@ -11,7 +11,7 @@ import (
 func sendEmail(toEmails []string, emailSubject string, emailContent []byte) error {
 	password := config.LoadConfig().GmailAppPassword
 	from := config.LoadConfig().GmailAddress
-	smtpHost := config.LoadConfig().GmailSmtpHost
+	smtpHost := "smtp.gmail.com"
 
 	if len(toEmails) == 0 {
 		logger.GetLogger().ErrorLog.Printf("No email recipients found for '%s'", emailSubject)

@@ -1,13 +1,12 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/iyilmaz24/Golang-Notification-Server/internal/config"
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/logger"
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/models"
+	"github.com/pkg/errors"
 )
 
 type EmailService struct {
@@ -26,7 +25,7 @@ func (notiService *EmailService) SendEmailNotification(notificationObj models.No
 	emailSubject := notificationObj.NotificationSubject
 	emailContent := getEmailContent(notificationObj)
 
-	err := sendEmail( emailRecipients, emailSubject, emailContent)
+	err := sendEmail(emailRecipients, emailSubject, emailContent)
 
 	if err != nil {
 		smsService := SmsService{}
@@ -34,49 +33,32 @@ func (notiService *EmailService) SendEmailNotification(notificationObj models.No
 		var errorMessage string
 
 		if err != nil {
-			errorMessage = fmt.Sprintf("Error sending email with fallback & primary method for '%s'", emailSubject)
+			errorMessage = fmt.Sprintf("(services/emailService.go) error sending email with fallback & primary method for '%s'", emailSubject)
+			logger.GetLogger().ErrorLog.Print(errorMessage)
+			smsService.AlertEmailNotWorking(false, errorMessage, err) // false for fallbackStatus
+			return errors.New(errorMessage)
 		} else {
-			errorMessage = fmt.Sprintf("Error sending email with primary method for '%s', fallback method successful", emailSubject)
+			errorMessage = fmt.Sprintf("(services/emailService.go) error sending email with primary method for '%s', fallback method successful", emailSubject)
+			logger.GetLogger().ErrorLog.Print(errorMessage)
+			smsService.AlertEmailNotWorking(true, errorMessage, err) // true for fallbackStatus, can use email fallback method for alert
 		}
-		smsService.AlertEmailNotWorking(errorMessage)
-		
-		logger.GetLogger().ErrorLog.Print(errorMessage)
-		return errors.New(errorMessage)
+		return err
 	}
 
 	return nil
 }
 
 func (notiService *EmailService) AlertSmsNotWorking(attempts int, errorMessage string, errObj error) error {
-	
+
 	currentTime := time.Now()
-	
+
 	failureInfo := &failureInfo{
 		FailedAttempts: attempts,
-		ErrorTime: fmt.Sprintf("%02d:%02d", currentTime.Hour(), currentTime.Minute()),
-		ErrorCode: "SMS-SEND-ERROR",
-		ErrorMessage: fmt.Sprintf("%s:\n\n %v", errorMessage, errObj),
+		ErrorTime:      fmt.Sprintf("%02d:%02d", currentTime.Hour(), currentTime.Minute()),
+		ErrorCode:      "SMS-SEND-ERROR",
+		ErrorMessage:   fmt.Sprintf("%s:\n\n %v", errorMessage, errObj),
 	}
 
-	emailRecipients := []string{config.LoadConfig().GmailAddress}
-	emailSubject := "URGENT: SMS Service Failure"
-	emailContent := getSMSServiceFailureContent(*failureInfo)
-
-	err := sendEmail(emailRecipients, emailSubject, emailContent)
-
-	if err != nil {
-		err = sendEmailFallback(emailRecipients, emailSubject, emailContent)
-		var errorMessage string
-
-		if err != nil {
-			errorMessage = "Error sending email about SMS service failure with fallback & primary email methods"
-		} else {
-			errorMessage = "Error sending email about SMS service failure with primary email method, fallback method successful"
-		}
-
-		logger.GetLogger().ErrorLog.Print(errorMessage)
-		return errors.New(errorMessage)
-	}
-
-	return nil
+	err := handleSmsFailure(*failureInfo)
+	return err
 }
