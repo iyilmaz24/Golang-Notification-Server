@@ -34,6 +34,5 @@ func (app *application) emailSmsSendError(w http.ResponseWriter, email error, sm
 		errorMessage = "sms notification error"
 	}
 
-	logger.GetLogger().ErrorLog.Print(errorMessage)
 	http.Error(w, errorMessage, http.StatusInternalServerError) // respond to client with error message
 }
