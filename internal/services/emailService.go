@@ -1,12 +1,12 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/logger"
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/models"
-	"github.com/pkg/errors"
 )
 
 type EmailService struct {

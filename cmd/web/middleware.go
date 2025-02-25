@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
+	"time"
 
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/config"
 	"github.com/iyilmaz24/Golang-Notification-Server/internal/logger"
@@ -24,7 +27,7 @@ func setCorsHeaders(w http.ResponseWriter, origin string) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func (app *application) validateRouteAndOrigin(next http.Handler) http.Handler {
+func (app *application) routeAndOriginMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -36,7 +39,7 @@ func (app *application) validateRouteAndOrigin(next http.Handler) http.Handler {
 			if referer != "" {
 				if parsedURL, err := url.Parse(referer); err == nil {
 					origin = fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host) // remove path from referer, only keep scheme and host
-				} else if err != nil {
+				} else {
 					logger.GetLogger().ErrorLog.Printf("(cors-middleware) Error parsing referer: %s", err)
 				}
 			}
@@ -63,6 +66,75 @@ func (app *application) validateRouteAndOrigin(next http.Handler) http.Handler {
 		}
 
 		setCorsHeaders(w, origin)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) apiKeyMiddleware(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		apiKey := r.Header.Get("X-API-Key")
+		if apiKey == "" {
+			logger.GetLogger().ErrorLog.Printf("(api-key-middleware) Missing API key for request to %s", r.URL.Path)
+			app.clientError(w, http.StatusUnauthorized)
+			return
+		}
+		if subtle.ConstantTimeCompare([]byte(apiKey), []byte(config.LoadConfig().AdminPassword)) != 1 { // constant-time comparison to prevent timing attacks
+			logger.GetLogger().ErrorLog.Printf("(api-key-middleware) Invalid API key for request to %s", r.URL.Path)
+			app.clientError(w, http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+type IPRateLimiter struct {
+	mu            sync.Mutex
+	ipRequestsMap map[string][]time.Time // map of IP addresses to a list of request times
+	requestLimit  int                    // max requests allowed in time window
+	timeWindow    time.Duration          // time window for rate limiting
+}
+
+func NewIPRateLimiter(maxRequests int, window time.Duration) *IPRateLimiter {
+	return &IPRateLimiter{
+		ipRequestsMap: make(map[string][]time.Time),
+		requestLimit:  maxRequests,
+		timeWindow:    window,
+	}
+}
+
+func (limiter *IPRateLimiter) rateLimitMiddleware(next http.Handler) http.Handler { // limits the number of requests from an IP address
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		ip := r.RemoteAddr
+		limiter.mu.Lock()
+		defer limiter.mu.Unlock()
+
+		now := time.Now()
+		var recent []time.Time
+		if requests, exists := limiter.ipRequestsMap[ip]; exists { // if IP exists in map
+			for _, t := range requests {
+				if now.Sub(t) < limiter.timeWindow { // if request is within the time window
+					recent = append(recent, t) // add request to recent list
+				}
+			}
+			limiter.ipRequestsMap[ip] = recent
+		} else if !exists { // if IP does not exist in map, create a new entry
+			limiter.ipRequestsMap[ip] = []time.Time{}
+		}
+
+		if len(recent) >= limiter.requestLimit { // if the number of requests in the time window exceeds the limit
+			logger.GetLogger().ErrorLog.Printf("(rate-limit-middleware) Rate limit exceeded for IP %s on %s", ip, r.URL.Path)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte(`{"error":"Rate limit exceeded. Try again later."}`))
+			return
+		}
+		limiter.ipRequestsMap[ip] = append(limiter.ipRequestsMap[ip], now) // add current request time to the list of requests for this IP
 
 		next.ServeHTTP(w, r)
 	})
