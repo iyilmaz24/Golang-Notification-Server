@@ -3,10 +3,13 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
@@ -65,40 +68,55 @@ var configDefinitions = map[string]ConfigDefinition{
 }
 
 func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string {
-
+	
 	paramInfo, exists := configDefinitions[paramName]
 	if !exists {
 		log.Fatalf("***ERROR (config): Parameter '%s' not found in configDefinitions", paramName)
 	}
 	isEncrypted := paramInfo.Type == "SecureString"
 
+	log.Printf("Attempting to retrieve parameter: %s (Path: %s)", paramName, paramInfo.Path)
+
 	param, err := ssmClient.GetParameter(context.TODO(), &ssm.GetParameterInput{
-		Name:           &paramInfo.Path,
-		WithDecryption: &isEncrypted,
+		Name:           aws.String(paramInfo.Path),
+		WithDecryption: aws.Bool(isEncrypted),
 	})
 
 	if err != nil {
-		if paramInfo.DefaultValue != "" { // if parameter not found, return default value from configDefinitions
+		log.Printf("ERROR retrieving parameter %s: %v", paramName, err)
+
+		username, _ := os.Hostname()
+		log.Printf("Hostname: %s", username)
+
+		if paramInfo.DefaultValue != "" {
+			log.Printf("Using default value for %s", paramName)
 			return paramInfo.DefaultValue
 		}
-		log.Fatalf("***ERROR (config): Parameter '%s' not found in Systems Manager", paramName)
+		errorMsg := fmt.Sprintf("***ERROR (config): Failed to retrieve parameter '%s' from Systems Manager: %v", paramName, err)
+		log.Fatal(errorMsg)
 	}
+	log.Printf("Successfully retrieved parameter: %s", paramName)
+
 	return *param.Parameter.Value
 }
 
 func LoadConfig() *Config {
-
 	once.Do(func() {
-		config, err := config.LoadDefaultConfig(context.TODO())
+
+		cfg, err := config.LoadDefaultConfig(context.TODO(), 
+			config.WithRegion("us-east-1"),  // Specify your AWS region
+		)
 		if err != nil {
-			log.Fatal("***ERROR (config): Unable to load AWS SDK config")
+			log.Fatal("***ERROR (config): Unable to load AWS SDK config: ", err)
 		}
-		ssmClient := ssm.NewFromConfig(config)
+		log.Println("AWS SDK Config loaded successfully")
 
-		corsString := getSystemsManagerParameter("CORS_ORIGIN", ssmClient) // comma separated list of URLs
-		corsUrls := strings.Split(corsString, ",")                         // convert to list of URLs
+		ssmClient := ssm.NewFromConfig(cfg)
 
-		corsOrigin := make(map[string]bool, len(corsUrls)) // create map of URLs
+		corsString := getSystemsManagerParameter("CORS_ORIGIN", ssmClient)
+		corsUrls := strings.Split(corsString, ",")
+
+		corsOrigin := make(map[string]bool, len(corsUrls))
 		for _, url := range corsUrls {
 			trimmedURL := strings.TrimSpace(url)
 			if trimmedURL != "" {
@@ -123,6 +141,7 @@ func LoadConfig() *Config {
 			AlertPhoneNumbers: strings.Split(alertPhoneNumbersString, ","),
 		}
 
+		log.Println("Configuration loaded successfully")
 	})
 
 	return instance

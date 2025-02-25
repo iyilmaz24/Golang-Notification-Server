@@ -83,11 +83,6 @@ func (app *application) adminNotification(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// if notiObj.AccessSecret != config.LoadConfig().AdminPassword { // protection against unauthorized access
-	// 	app.clientError(w, http.StatusUnauthorized)
-	// 	return
-	// }
-
 	emailErr, smsErr := error(nil), error(nil)
 
 	if notiObj.NotificationEmail {
@@ -110,7 +105,7 @@ func (app *application) adminNotification(w http.ResponseWriter, r *http.Request
 	w.Write([]byte("Notification successful"))
 }
 
-func (app *application) cronNotification(w http.ResponseWriter, r *http.Request) { // Used by Lambda when everything healthy, log to DB - dont send SMS &/or email
+func (app *application) cronNotification(w http.ResponseWriter, r *http.Request) { // Used by Lambda when everything healthy, log to DB, send SMS &/or email
 
 	notiObj, err := app.getNotificationObject(w, r)
 	if err != nil {
