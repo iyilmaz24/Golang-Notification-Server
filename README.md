@@ -1,6 +1,9 @@
 # Golang Notification Server
 This project is a notification server built with Go. It sends email and SMS notifications triggered by various events.  It uses AWS Systems Manager Parameter Store for secure configuration and includes robust error handling and logging.
 
+## Add-Ons
+This project integrates with the health monitor AWS Lambda at [https://github.com/iyilmaz24/AWS-Cron-Lambda](https://github.com/iyilmaz24/AWS-Cron-Lambda/tree/main) for sending email and SMS notifications. The NOTIFICATION_SERVER_ENDPOINT and NOTIFICATION_SERVER_API_KEY environment variables must be configured in the Lambda & AWS Systems Manager Parameter Store for your instance of this server.
+
 ## Features
 * Multiple Notification Types: Sends daily analytics reports, internal alerts, cron job notifications, and administrative notifications.
 * Email and SMS Delivery: Delivers notifications via email and SMS, with fallback mechanisms.
