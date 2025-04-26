@@ -68,7 +68,7 @@ var configDefinitions = map[string]ConfigDefinition{
 }
 
 func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string {
-	
+
 	paramInfo, exists := configDefinitions[paramName]
 	if !exists {
 		log.Fatalf("***ERROR (config): Parameter '%s' not found in configDefinitions", paramName)
@@ -103,8 +103,8 @@ func getSystemsManagerParameter(paramName string, ssmClient *ssm.Client) string 
 func LoadConfig() *Config {
 	once.Do(func() {
 
-		cfg, err := config.LoadDefaultConfig(context.TODO(), 
-			config.WithRegion("us-east-1"),  // Specify your AWS region
+		cfg, err := config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion("us-east-1"), // Specify your AWS region
 		)
 		if err != nil {
 			log.Fatal("***ERROR (config): Unable to load AWS SDK config: ", err)

@@ -45,6 +45,19 @@ func (app *application) routeAndOriginMiddleware(next http.Handler) http.Handler
 			}
 		}
 
+		apiKey := r.Header.Get("X-API-Key")
+		if apiKey != "" {
+			if subtle.ConstantTimeCompare([]byte(apiKey), []byte(config.LoadConfig().AdminPassword)) != 1 { // constant-time comparison to prevent timing attacks
+				logger.GetLogger().ErrorLog.Printf("(middleware) Invalid API key for request to %s", r.URL.Path)
+				app.clientError(w, http.StatusUnauthorized)
+				return
+			}
+			logger.GetLogger().InfoLog.Printf("API key authenticated request from origin: %s", origin)
+			setCorsHeaders(w, origin)
+			next.ServeHTTP(w, r) // skip cors origin check if a valid API key is provided
+			return
+		}
+
 		_, validOrigin := corsOrigin[origin]
 		if !validOrigin {
 			app.clientError(w, http.StatusForbidden)                                               // respond with 403 Forbidden
@@ -66,26 +79,6 @@ func (app *application) routeAndOriginMiddleware(next http.Handler) http.Handler
 		}
 
 		setCorsHeaders(w, origin)
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (app *application) apiKeyMiddleware(next http.Handler) http.Handler {
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		apiKey := r.Header.Get("X-API-Key")
-		if apiKey == "" {
-			logger.GetLogger().ErrorLog.Printf("(api-key-middleware) Missing API key for request to %s", r.URL.Path)
-			app.clientError(w, http.StatusUnauthorized)
-			return
-		}
-		if subtle.ConstantTimeCompare([]byte(apiKey), []byte(config.LoadConfig().AdminPassword)) != 1 { // constant-time comparison to prevent timing attacks
-			logger.GetLogger().ErrorLog.Printf("(api-key-middleware) Invalid API key for request to %s", r.URL.Path)
-			app.clientError(w, http.StatusUnauthorized)
-			return
-		}
 
 		next.ServeHTTP(w, r)
 	})

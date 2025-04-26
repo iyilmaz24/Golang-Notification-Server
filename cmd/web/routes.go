@@ -16,9 +16,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("/cronNotification", app.cronNotification)         // Used for routine health checks, log event to DB
 	mux.HandleFunc("/adminNotification", app.adminNotification)       // Used for testing from outside the VPC / AWS environment, send SMS &/or email - do not log to DB
 
-	handler := app.routeAndOriginMiddleware(
-		app.apiKeyMiddleware(
-			limiter.rateLimitMiddleware(mux))) // in order of validate route and origin, validate API key, then rate limit requests
+	handler := app.routeAndOriginMiddleware(limiter.rateLimitMiddleware(mux)) // in order of validate API key or route & origin, then rate limit requests after
 
 	return handler
 }
